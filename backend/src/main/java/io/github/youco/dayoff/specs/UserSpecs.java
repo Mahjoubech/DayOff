@@ -1,4 +1,4 @@
-epackage io.github.youco.dayoff.specs;
+package io.github.youco.dayoff.specs;
 
 import io.github.youco.dayoff.model.entity.User;
 import io.github.youco.dayoff.model.enums.Roles;
