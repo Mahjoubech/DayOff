@@ -1,5 +1,5 @@
 export type LeaveType = 'CONGE' | 'MALADIE' | 'URGENCE';
-export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 
 export interface LeaveRequest {
   id: number;

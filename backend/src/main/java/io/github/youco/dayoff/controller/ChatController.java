@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
 
 /**
  * Chat Controller — REST endpoints + WebSocket message handler for real-time chat.
@@ -102,5 +103,38 @@ public class ChatController {
         UserResponse me = userService.getUserByEmail(auth.getName());
         chatService.markAsRead(senderId, me.getId());
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/contacts")
+    @Operation(summary = "Get a list of users this user can chat with")
+    public ResponseEntity<List<UserResponse>> getChatContacts(Authentication auth) {
+        UserResponse me = userService.getUserByEmail(auth.getName());
+        List<UserResponse> contacts = new ArrayList<>();
+
+        switch (me.getRole()) {
+            case SUPER_ADMIN -> {
+                // Super Admin can chat with anyone
+                contacts.addAll(userService.getAllEmployees());
+            }
+            case ADMIN -> {
+                // HR can chat with their employees
+                contacts.addAll(userService.getEmployeesByHRManager(me.getId()));
+                // AND HR can chat with all Super Admins
+                contacts.addAll(userService.getAllEmployees().stream()
+                        .filter(u -> u.getRole() == io.github.youco.dayoff.model.enums.Roles.SUPER_ADMIN)
+                        .toList());
+            }
+            case EMPLOYEE -> {
+                // Employee can chat with their HR Manager
+                if (me.getHrManagerId() != null) {
+                    contacts.add(userService.getUserById(me.getHrManagerId()));
+                }
+            }
+        }
+        
+        // Remove self from the list just in case
+        contacts.removeIf(u -> u.getId().equals(me.getId()));
+        
+        return ResponseEntity.ok(contacts);
     }
 }

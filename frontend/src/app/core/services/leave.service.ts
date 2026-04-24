@@ -50,4 +50,8 @@ export class LeaveService {
   reject(id: number): Observable<LeaveRequest> {
     return this.http.put<LeaveRequest>(`${this.hrUrl}/${id}/reject`, {});
   }
+
+  cancel(id: number): Observable<LeaveRequest> {
+    return this.http.put<LeaveRequest>(`${this.hrUrl}/${id}/cancel`, {});
+  }
 }

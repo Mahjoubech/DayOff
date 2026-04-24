@@ -34,6 +34,13 @@ public interface LeaveService {
      * @return the updated leave response
      */
     LeaveResponse rejectLeaveRequest(Long leaveRequestId);
+    
+    /**
+     * Cancel/Annul a leave request
+     * @param leaveRequestId the leave request to cancel
+     * @return the updated leave response
+     */
+    LeaveResponse cancelLeaveRequest(Long leaveRequestId);
 
     /**
      * Get all leave requests for a specific employee

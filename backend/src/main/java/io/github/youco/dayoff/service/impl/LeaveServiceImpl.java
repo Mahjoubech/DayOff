@@ -8,6 +8,7 @@ import io.github.youco.dayoff.mapper.LeaveMapper;
 import io.github.youco.dayoff.model.entity.LeaveRequest;
 import io.github.youco.dayoff.model.entity.User;
 import io.github.youco.dayoff.model.enums.LeaveStatus;
+import io.github.youco.dayoff.model.enums.NotificationType;
 import io.github.youco.dayoff.repository.LeaveRequestRepository;
 import io.github.youco.dayoff.repository.UserRepository;
 import io.github.youco.dayoff.service.LeaveService;
@@ -59,6 +60,16 @@ public class LeaveServiceImpl implements LeaveService {
 
         if (workingDays <= 0) {
             throw new BusinessException("Leave request must include at least one working day");
+        }
+
+        // Check for overlapping leaves
+        boolean overlaps = leaveRequestRepository.findByEmployeeId(employeeId).stream()
+                .filter(l -> l.getStatus() != LeaveStatus.REJECTED)
+                .anyMatch(l -> !request.getStartDate().isAfter(l.getEndDate()) && 
+                               !request.getEndDate().isBefore(l.getStartDate()));
+                               
+        if (overlaps) {
+            throw new BusinessException("Your requested dates overlap with an existing leave request.");
         }
 
         // Check remaining leave balance
@@ -155,6 +166,39 @@ public class LeaveServiceImpl implements LeaveService {
                 leaveRequest.getEmployee().getId(),
                 leaveRequest.getStartDate(),
                 leaveRequest.getEndDate()
+        );
+
+        return leaveMapper.toResponse(savedRequest);
+    }
+
+    @Override
+    public LeaveResponse cancelLeaveRequest(Long leaveRequestId) {
+        log.info("Cancelling leave request: {}", leaveRequestId);
+
+        LeaveRequest leaveRequest = leaveRequestRepository.findById(leaveRequestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Leave request not found with id: " + leaveRequestId));
+
+        // If the leave was already approved, return the days to the employee
+        if (leaveRequest.getStatus() == LeaveStatus.APPROVED) {
+            User employee = leaveRequest.getEmployee();
+            int newBalance = employee.getLeaveDaysRemaining() + leaveRequest.getDays();
+            employee.setLeaveDaysRemaining(newBalance);
+            userRepository.save(employee);
+            log.info("Leave request was APPROVED. Returning {} days to employee {}. New balance: {}", 
+                    leaveRequest.getDays(), employee.getId(), newBalance);
+        }
+
+        leaveRequest.setStatus(LeaveStatus.CANCELLED);
+        LeaveRequest savedRequest = leaveRequestRepository.save(leaveRequest);
+
+        log.info("Leave request {} marked as CANCELLED", leaveRequestId);
+
+        // Notify employee of cancellation
+        notificationService.sendNotification(
+                leaveRequest.getEmployee().getId(),
+                String.format("Your leave request from %s to %s has been cancelled/annulled.", 
+                        leaveRequest.getStartDate(), leaveRequest.getEndDate()),
+                NotificationType.LEAVE_CANCELLED
         );
 
         return leaveMapper.toResponse(savedRequest);

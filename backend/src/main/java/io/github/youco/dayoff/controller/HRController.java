@@ -154,6 +154,12 @@ public class HRController {
         return ResponseEntity.ok(leaveService.rejectLeaveRequest(id));
     }
 
+    @PutMapping("/leaves/{id}/cancel")
+    @Operation(summary = "Cancel/Annul a leave request")
+    public ResponseEntity<LeaveResponse> cancelLeave(@PathVariable Long id) {
+        return ResponseEntity.ok(leaveService.cancelLeaveRequest(id));
+    }
+
     // ─── Attendance ────────────────────────────────────────────────────────────
 
     @GetMapping("/attendance/date")

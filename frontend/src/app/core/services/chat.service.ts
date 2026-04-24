@@ -57,8 +57,8 @@ export class ChatService {
     return this.http.put<void>(`${this.apiUrl}/read/${senderId}`, {});
   }
 
-  /** Get list of users the current user has chatted with */
+  /** Get list of users the current user can chat with based on role */
   getContacts(): Observable<User[]> {
-    return this.http.get<User[]>(`${environment.apiUrl}/superadmin/users`);
+    return this.http.get<User[]>(`${this.apiUrl}/contacts`);
   }
 }
