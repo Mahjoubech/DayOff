@@ -40,6 +40,9 @@ public class LeaveRequest {
     @Builder.Default
     private LeaveStatus status = LeaveStatus.PENDING;
 
+    @Column(columnDefinition = "TEXT")
+    private String reason;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employee_id", nullable = false)
     private User employee;
