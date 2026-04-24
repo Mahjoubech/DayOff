@@ -9,7 +9,9 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
+                // If you use "Pipeline script from SCM", keep 'checkout scm'
+                // If you paste the script in Jenkins, use the line below:
+                git branch: 'main', url: 'https://github.com/Mahjoubech/DayOff.git'
             }
         }
 
