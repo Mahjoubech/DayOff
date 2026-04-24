@@ -1,7 +1,7 @@
 package io.github.youco.dayoff.service;
 
 import io.github.youco.dayoff.model.entity.Notification;
-
+import io.github.youco.dayoff.model.enums.NotificationType;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -18,7 +18,7 @@ public interface NotificationService {
      * @param type the notification type
      * @return the saved notification
      */
-    Notification sendNotification(Long userId, String content, io.github.youco.dayoff.model.enums.NotificationType type);
+    Notification sendNotification(Long userId, String content, NotificationType type);
 
     /**
      * Send a notification when a leave request is submitted
