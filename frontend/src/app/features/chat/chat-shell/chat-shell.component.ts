@@ -28,7 +28,12 @@ import { User } from '../../../core/models/user.model';
                    <span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></span>
                 </div>
                 <div class="flex-1 min-w-0">
-                   <p class="text-sm font-bold truncate">{{ contact.nom }} {{ contact.prenom }}</p>
+                   <div class="flex items-center justify-between gap-2">
+                     <p class="text-sm font-bold truncate">{{ contact.nom }} {{ contact.prenom }}</p>
+                     <span *ngIf="unreadCounts.get(contact.id)" class="bg-indigo-600 text-white text-[10px] min-w-[18px] h-[18px] flex items-center justify-center rounded-full font-black shadow-sm shrink-0">
+                        {{ unreadCounts.get(contact.id) }}
+                     </span>
+                   </div>
                    <p class="text-xs text-text-muted truncate">{{ contact.role }}</p>
                 </div>
              </div>
@@ -127,6 +132,7 @@ export class ChatShellComponent implements OnInit {
   contacts: User[] = [];
   messages: Message[] = [];
   selectedContact: User | null = null;
+  unreadCounts = new Map<number, number>();
   newMessage = '';
   currentUser = this.authService.getCurrentUser();
   currentUserId = this.currentUser?.id;
@@ -142,11 +148,18 @@ export class ChatShellComponent implements OnInit {
       this.messages = msgs;
       this.scrollToBottom();
     });
+
+    // Track unread counts
+    this.chatService.unreadCounts$.subscribe(counts => {
+      this.unreadCounts = counts;
+    });
   }
 
   selectContact(contact: User) {
     this.selectedContact = contact;
-    this.chatService.getConversation(contact.id).subscribe();
+    this.chatService.getConversation(contact.id).subscribe(() => {
+      this.chatService.markAsRead(contact.id).subscribe();
+    });
   }
 
   sendMessage() {

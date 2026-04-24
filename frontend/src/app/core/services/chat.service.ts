@@ -16,17 +16,45 @@ export class ChatService {
   private messagesSubject = new BehaviorSubject<Message[]>([]);
   public messages$ = this.messagesSubject.asObservable();
 
+  private unreadCountsSubject = new BehaviorSubject<Map<number, number>>(new Map());
+  public unreadCounts$ = this.unreadCountsSubject.asObservable();
+
   constructor() {
     // Listen for real-time messages
     this.wsService.getMessages().pipe(
       filter(msg => msg.type === 'CHAT'),
       map(msg => msg.data as Message)
     ).subscribe(newMsg => {
-      const current = this.messagesSubject.value;
-      // Only add if not already present (to avoid double display if REST and WS both fire)
-      if (!current.some(m => m.id === newMsg.id)) {
-        this.messagesSubject.next([...current, newMsg]);
+      // Add to messages list
+      const currentMsgs = this.messagesSubject.value;
+      if (!currentMsgs.some(m => m.id === newMsg.id)) {
+        this.messagesSubject.next([...currentMsgs, newMsg]);
       }
+
+      // Increment unread count for the sender (if it's not from self)
+      const senderId = newMsg.senderId;
+      if (senderId) {
+        const counts = new Map(this.unreadCountsSubject.value);
+        const currentCount = counts.get(senderId) || 0;
+        counts.set(senderId, currentCount + 1);
+        this.unreadCountsSubject.next(counts);
+      }
+    });
+
+    // Initial load of unread counts
+    this.loadUnreadCounts();
+  }
+
+  private loadUnreadCounts() {
+    this.getUnreadMessages().subscribe(msgs => {
+      const counts = new Map<number, number>();
+      msgs.forEach(m => {
+        const senderId = m.senderId;
+        if (senderId) {
+          counts.set(senderId, (counts.get(senderId) || 0) + 1);
+        }
+      });
+      this.unreadCountsSubject.next(counts);
     });
   }
 
@@ -54,7 +82,13 @@ export class ChatService {
   }
 
   markAsRead(senderId: number): Observable<void> {
-    return this.http.put<void>(`${this.apiUrl}/read/${senderId}`, {});
+    return this.http.put<void>(`${this.apiUrl}/read/${senderId}`, {}).pipe(
+      tap(() => {
+        const counts = new Map(this.unreadCountsSubject.value);
+        counts.delete(senderId);
+        this.unreadCountsSubject.next(counts);
+      })
+    );
   }
 
   /** Get list of users the current user can chat with based on role */
