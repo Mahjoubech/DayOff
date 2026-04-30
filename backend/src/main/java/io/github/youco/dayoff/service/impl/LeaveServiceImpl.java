@@ -248,4 +248,8 @@ public class LeaveServiceImpl implements LeaveService {
 
         return workingDays;
     }
+    private int total(int employeeId){
+        return leaveRequestRepository.findByEmployeeId().
+
+    }
 }
